@@ -4,7 +4,6 @@ import {
   Button,
   Container,
   Heading,
-  HStack,
   Link as ChakraLink,
   Stack,
   Text,
@@ -33,11 +32,25 @@ export default async function ProfilePage({ params }: Props) {
 
   const isOwn = profile.id === session.user.id
 
+  // Check if mutual match exists
+  let isMatch = false
+  if (!isOwn) {
+    const [iLikedThem, theyLikedMe] = await Promise.all([
+      prisma.like.findUnique({
+        where: { fromUser_toUser: { fromUser: session.user.id, toUser: id } },
+      }),
+      prisma.like.findUnique({
+        where: { fromUser_toUser: { fromUser: id, toUser: session.user.id } },
+      }),
+    ])
+    isMatch = !!(iLikedThem && theyLikedMe)
+  }
+
   return (
     <Container maxW="sm" py="10">
       <Stack gap="6">
         <Button asChild variant="ghost" alignSelf="start" size="sm">
-          <Link href="/feed">← Volver al feed</Link>
+          <Link href="/feed">← Volver</Link>
         </Button>
 
         <Stack align="center" gap="3">
@@ -58,6 +71,12 @@ export default async function ProfilePage({ params }: Props) {
             <Text fontSize="sm" color="fg.muted">{profile.city}</Text>
           )}
         </Stack>
+
+        {isMatch && (
+          <Badge colorPalette="green" alignSelf="center" size="lg" px="4" py="1">
+            Match mutuo
+          </Badge>
+        )}
 
         {profile.bio && (
           <Text textAlign="center" fontStyle="italic">
@@ -98,7 +117,13 @@ export default async function ProfilePage({ params }: Props) {
           </ChakraLink>
         )}
 
-        {!isOwn && <ConnectButton targetId={profile.id} />}
+        {!isOwn && isMatch && <ConnectButton targetId={profile.id} />}
+
+        {!isOwn && !isMatch && (
+          <Text textAlign="center" color="fg.muted" fontSize="sm">
+            Necesitás un match mutuo para conectar por WhatsApp.
+          </Text>
+        )}
 
         {isOwn && (
           <Button asChild variant="outline">

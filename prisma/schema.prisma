@@ -20,6 +20,8 @@ model User {
 
   connectionsFrom Connection[] @relation("ConnectionFrom")
   connectionsTo   Connection[] @relation("ConnectionTo")
+  likesGiven      Like[]       @relation("LikeFrom")
+  likesReceived   Like[]       @relation("LikeTo")
 }
 
 model Account {
@@ -83,6 +85,20 @@ model Profile {
   @@index([community, visible, onboardingComplete])
   @@index([lookingFor], type: Gin)
   @@index([industries], type: Gin)
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  fromUser  String
+  toUser    String
+  createdAt DateTime @default(now())
+
+  from User @relation("LikeFrom", fields: [fromUser], references: [id], onDelete: Cascade)
+  to   User @relation("LikeTo", fields: [toUser], references: [id], onDelete: Cascade)
+
+  @@unique([fromUser, toUser])
+  @@index([fromUser])
+  @@index([toUser])
 }
 
 model Connection {
