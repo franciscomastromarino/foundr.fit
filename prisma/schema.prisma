@@ -64,9 +64,10 @@ model Profile {
   whatsappE164       String
   role               String
   startup            String
+  startupUrl         String?
   industries         String[]
   lookingFor         String[]
-  offering           String[]
+  interests          String[]
   bio                String?  @db.VarChar(280)
   city               String?
   linkedinUrl        String?

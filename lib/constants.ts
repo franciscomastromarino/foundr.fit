@@ -34,6 +34,20 @@ export const INTENTS = [
   'Mentoría',
 ] as const
 
+export const INTERESTS = [
+  'Tecnología',
+  'Producto',
+  'Growth',
+  'Ventas',
+  'Fundraising',
+  'Liderazgo',
+  'Operaciones',
+  'Diseño',
+  'Data',
+  'Legal',
+] as const
+
 export type Role = (typeof ROLES)[number]
 export type Industry = (typeof INDUSTRIES)[number]
 export type Intent = (typeof INTENTS)[number]
+export type Interest = (typeof INTERESTS)[number]

@@ -7,13 +7,12 @@ import {
   Heading,
   Stack,
   Text,
-  VStack,
 } from '@chakra-ui/react'
 
 export default function LoginPage() {
   return (
     <Container maxW="sm" py="20">
-      <VStack gap="8">
+      <Stack gap="8">
         <Stack gap="2" textAlign="center">
           <Heading size="2xl">Founder Radar</Heading>
           <Text color="fg.muted">Networking para miembros de Emprending</Text>
@@ -35,7 +34,7 @@ export default function LoginPage() {
             Continuar con LinkedIn
           </Button>
         </Stack>
-      </VStack>
+      </Stack>
     </Container>
   )
 }
