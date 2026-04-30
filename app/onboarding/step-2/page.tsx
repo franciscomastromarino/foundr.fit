@@ -15,6 +15,7 @@ import { useState } from 'react'
 import { ROLES, INDUSTRIES } from '@/lib/constants'
 import { ChipSelect } from '@/components/chip-select'
 import { saveStep2 } from '../actions'
+import { trackEvent } from '@/lib/analytics'
 import { ProgressBar } from '../progress-bar'
 import Link from 'next/link'
 
@@ -46,6 +47,7 @@ export default function Step2Page() {
   const onSubmit = async (data: FormData) => {
     setSubmitting(true)
     try {
+      trackEvent('onboarding_step_completed', { step: 2 })
       await saveStep2(data)
     } catch {
       setSubmitting(false)

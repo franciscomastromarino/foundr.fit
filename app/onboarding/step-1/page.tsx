@@ -19,6 +19,7 @@ import {
 import { useSession } from 'next-auth/react'
 import { useEffect, useState } from 'react'
 import { saveStep1 } from '../actions'
+import { trackEvent } from '@/lib/analytics'
 import { ProgressBar } from '../progress-bar'
 
 const schema = z.object({
@@ -53,6 +54,7 @@ export default function Step1Page() {
   const onSubmit = async (data: FormData) => {
     setSubmitting(true)
     try {
+      trackEvent('onboarding_step_completed', { step: 1 })
       await saveStep1({
         fullName: data.fullName,
         whatsappE164: phone,

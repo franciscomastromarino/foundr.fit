@@ -2,11 +2,14 @@
 
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react'
 import { SessionProvider } from 'next-auth/react'
+import { PHProvider } from './posthog-provider'
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
-      <ChakraProvider value={defaultSystem}>{children}</ChakraProvider>
+      <PHProvider>
+        <ChakraProvider value={defaultSystem}>{children}</ChakraProvider>
+      </PHProvider>
     </SessionProvider>
   )
 }

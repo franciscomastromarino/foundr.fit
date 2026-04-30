@@ -15,6 +15,7 @@ import { useState } from 'react'
 import { INTENTS, INTERESTS } from '@/lib/constants'
 import { ChipSelect } from '@/components/chip-select'
 import { saveStep3 } from '../actions'
+import { trackEvent } from '@/lib/analytics'
 import { ProgressBar } from '../progress-bar'
 import Link from 'next/link'
 
@@ -51,6 +52,8 @@ export default function Step3Page() {
   const onSubmit = async (data: FormData) => {
     setSubmitting(true)
     try {
+      trackEvent('onboarding_step_completed', { step: 3 })
+      trackEvent('onboarding_finished')
       await saveStep3(data)
     } catch {
       setSubmitting(false)
