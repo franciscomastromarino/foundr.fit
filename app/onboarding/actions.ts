@@ -5,7 +5,7 @@ import { isValidPhoneNumber } from 'libphonenumber-js'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
-import { ROLES, INDUSTRIES, INTENTS, INTERESTS } from '@/lib/constants'
+import { ROLES, INDUSTRIES, INTENTS, INTERESTS, TEAM_SIZES } from '@/lib/constants'
 
 const Step1Schema = z.object({
   fullName: z.string().min(2, 'Mínimo 2 caracteres').max(80),
@@ -17,6 +17,7 @@ const Step2Schema = z.object({
   role: z.enum(ROLES as unknown as [string, ...string[]]),
   startup: z.string().min(1, 'Requerido').max(80),
   startupUrl: z.string().url().optional().or(z.literal('')),
+  teamSize: z.enum(TEAM_SIZES as unknown as [string, ...string[]], 'Elegí el tamaño'),
   industries: z
     .array(z.enum(INDUSTRIES as unknown as [string, ...string[]]))
     .min(1, 'Elegí al menos una')
@@ -80,6 +81,7 @@ export async function saveStep2(input: z.infer<typeof Step2Schema>) {
       role: data.role,
       startup: data.startup,
       startupUrl: data.startupUrl || null,
+      teamSize: data.teamSize,
       industries: data.industries,
       onboardingStep: 3,
     },

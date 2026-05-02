@@ -6,6 +6,7 @@ import {
   Container,
   Heading,
   HStack,
+  Link as ChakraLink,
   Stack,
   Text,
   Wrap,
@@ -28,8 +29,20 @@ function MatchCard({ profile }: { profile: Profile }) {
           <Stack gap="0" flex="1">
             <Heading size="sm">{profile.fullName}</Heading>
             <Text fontSize="sm" color="fg.muted">
-              {profile.role} en {profile.startup}
+              {profile.role} en{' '}
+              {profile.startupUrl ? (
+                <ChakraLink href={profile.startupUrl} target="_blank" color="blue.500">
+                  {profile.startup}
+                </ChakraLink>
+              ) : (
+                profile.startup
+              )}
             </Text>
+            {profile.teamSize && (
+              <Text fontSize="xs" color="fg.muted">
+                {profile.teamSize} {profile.teamSize === 'Solo founder' ? '' : 'personas'}
+              </Text>
+            )}
           </Stack>
           <Badge colorPalette="green">Match</Badge>
         </HStack>

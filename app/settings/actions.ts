@@ -5,7 +5,7 @@ import { isValidPhoneNumber } from 'libphonenumber-js'
 import { auth } from '@/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
-import { ROLES, INDUSTRIES, INTENTS, INTERESTS } from '@/lib/constants'
+import { ROLES, INDUSTRIES, INTENTS, INTERESTS, TEAM_SIZES } from '@/lib/constants'
 
 const ProfileSchema = z.object({
   fullName: z.string().min(2).max(80),
@@ -14,6 +14,7 @@ const ProfileSchema = z.object({
   role: z.enum(ROLES as unknown as [string, ...string[]]),
   startup: z.string().min(1).max(80),
   startupUrl: z.string().url().optional().or(z.literal('')),
+  teamSize: z.enum(TEAM_SIZES as unknown as [string, ...string[]]).optional().or(z.literal('')),
   industries: z.array(z.string()).min(1).max(3),
   lookingFor: z.array(z.string()).min(1).max(2),
   interests: z.array(z.string()).min(1).max(3),
@@ -35,6 +36,7 @@ export async function updateProfile(input: z.infer<typeof ProfileSchema>) {
       ...data,
       avatarUrl: data.avatarUrl || null,
       startupUrl: data.startupUrl || null,
+      teamSize: data.teamSize || null,
       bio: data.bio || null,
       city: data.city || null,
       linkedinUrl: data.linkedinUrl || null,

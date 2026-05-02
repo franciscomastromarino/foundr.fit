@@ -34,6 +34,15 @@ export const INTENTS = [
   'Mentoría',
 ] as const
 
+export const TEAM_SIZES = [
+  'Solo founder',
+  '2-5',
+  '6-15',
+  '16-50',
+  '51-200',
+  '200+',
+] as const
+
 export const INTERESTS = [
   'Tecnología',
   'Producto',
@@ -51,3 +60,4 @@ export type Role = (typeof ROLES)[number]
 export type Industry = (typeof INDUSTRIES)[number]
 export type Intent = (typeof INTENTS)[number]
 export type Interest = (typeof INTERESTS)[number]
+export type TeamSize = (typeof TEAM_SIZES)[number]

@@ -12,7 +12,7 @@ import {
   Stack,
 } from '@chakra-ui/react'
 import { useState } from 'react'
-import { ROLES, INDUSTRIES } from '@/lib/constants'
+import { ROLES, INDUSTRIES, TEAM_SIZES } from '@/lib/constants'
 import { ChipSelect } from '@/components/chip-select'
 import { saveStep2 } from '../actions'
 import { trackEvent } from '@/lib/analytics'
@@ -23,6 +23,7 @@ const schema = z.object({
   role: z.enum(ROLES as unknown as [string, ...string[]], 'Elegí un rol'),
   startup: z.string().min(1, 'Requerido').max(80),
   startupUrl: z.string().url('URL inválida').optional().or(z.literal('')),
+  teamSize: z.enum(TEAM_SIZES as unknown as [string, ...string[]], 'Elegí el tamaño'),
   industries: z
     .array(z.string())
     .min(1, 'Elegí al menos una')
@@ -103,6 +104,30 @@ export default function Step2Page() {
               />
               {errors.startupUrl && (
                 <Field.ErrorText>{errors.startupUrl.message}</Field.ErrorText>
+              )}
+            </Field.Root>
+
+            <Field.Root invalid={!!errors.teamSize}>
+              <Field.Label>Tamaño del equipo</Field.Label>
+              <select
+                {...register('teamSize')}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--chakra-colors-border)',
+                  fontSize: '16px',
+                }}
+              >
+                <option value="">Seleccionar...</option>
+                {TEAM_SIZES.map((size) => (
+                  <option key={size} value={size}>
+                    {size} {size === 'Solo founder' ? '' : 'personas'}
+                  </option>
+                ))}
+              </select>
+              {errors.teamSize && (
+                <Field.ErrorText>{errors.teamSize.message}</Field.ErrorText>
               )}
             </Field.Root>
 

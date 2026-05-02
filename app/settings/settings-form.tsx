@@ -20,7 +20,7 @@ import {
 } from '@chakra-ui/react'
 import { useState } from 'react'
 import { signOut } from 'next-auth/react'
-import { ROLES, INDUSTRIES, INTENTS, INTERESTS } from '@/lib/constants'
+import { ROLES, INDUSTRIES, INTENTS, INTERESTS, TEAM_SIZES } from '@/lib/constants'
 import { ChipSelect } from '@/components/chip-select'
 import { updateProfile, deleteAccount } from './actions'
 import type { Profile } from '@prisma/client'
@@ -32,6 +32,7 @@ const schema = z.object({
   role: z.enum(ROLES as unknown as [string, ...string[]]),
   startup: z.string().min(1).max(80),
   startupUrl: z.string().url('URL inválida').optional().or(z.literal('')),
+  teamSize: z.string().optional(),
   industries: z.array(z.string()).min(1).max(3),
   lookingFor: z.array(z.string()).min(1).max(2),
   interests: z.array(z.string()).min(1).max(3),
@@ -65,6 +66,7 @@ export function SettingsForm({ profile }: { profile: Profile }) {
       role: profile.role as FormData['role'],
       startup: profile.startup,
       startupUrl: profile.startupUrl ?? '',
+      teamSize: profile.teamSize ?? '',
       industries: profile.industries,
       lookingFor: profile.lookingFor,
       interests: profile.interests,
@@ -145,6 +147,27 @@ export function SettingsForm({ profile }: { profile: Profile }) {
             <Field.Label>Sitio web (opcional)</Field.Label>
             <Input {...register('startupUrl')} placeholder="https://miempresa.com" type="url" />
             {errors.startupUrl && <Field.ErrorText>{errors.startupUrl.message}</Field.ErrorText>}
+          </Field.Root>
+
+          <Field.Root>
+            <Field.Label>Tamaño del equipo</Field.Label>
+            <select
+              {...register('teamSize')}
+              style={{
+                width: '100%',
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid var(--chakra-colors-border)',
+                fontSize: '16px',
+              }}
+            >
+              <option value="">Seleccionar...</option>
+              {TEAM_SIZES.map((size) => (
+                <option key={size} value={size}>
+                  {size} {size === 'Solo founder' ? '' : 'personas'}
+                </option>
+              ))}
+            </select>
           </Field.Root>
 
           <Field.Root>
