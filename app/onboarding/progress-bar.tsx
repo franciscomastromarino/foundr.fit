@@ -10,14 +10,14 @@ export function ProgressBar({ step }: { step: number }) {
           <Box
             key={s}
             flex="1"
-            h="2"
+            h="1.5"
             borderRadius="full"
-            bg={s <= step ? 'blue.500' : 'gray.200'}
-            transition="background 0.2s"
+            bg={s <= step ? 'brand.500' : 'surface.elevated'}
+            transition="background 0.3s"
           />
         ))}
       </HStack>
-      <Text fontSize="sm" color="fg.muted" textAlign="center">
+      <Text fontSize="sm" color="fg.subtle" textAlign="center">
         Paso {step} de 3
       </Text>
     </Container>

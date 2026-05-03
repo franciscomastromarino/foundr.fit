@@ -27,7 +27,7 @@ export function ChipSelect({ options, value, onChange, max }: Props) {
             key={opt}
             size="lg"
             variant={selected ? 'solid' : 'outline'}
-            colorPalette="blue"
+            colorPalette="brand"
             cursor="pointer"
             onClick={() => toggle(opt)}
           >

@@ -7,6 +7,7 @@ import { isValidPhoneNumber } from 'libphonenumber-js'
 import PhoneInput from 'react-phone-number-input'
 import 'react-phone-number-input/style.css'
 import {
+  Box,
   Button,
   Container,
   Field,
@@ -80,41 +81,47 @@ export default function Step1Page() {
                 boxSize="80px"
                 borderRadius="full"
                 alignSelf="center"
+                borderWidth="2px"
+                borderColor="brand.500"
               />
             )}
 
-            <Field.Root invalid={!!errors.fullName}>
-              <Field.Label>Nombre y apellido</Field.Label>
-              <Input {...register('fullName')} />
-              {errors.fullName && (
-                <Field.ErrorText>{errors.fullName.message}</Field.ErrorText>
-              )}
-            </Field.Root>
+            <Box bg="surface.card" borderRadius="xl" p="5" borderWidth="1px" borderColor="surface.border">
+              <Stack gap="4">
+                <Field.Root invalid={!!errors.fullName}>
+                  <Field.Label color="fg.muted" fontSize="sm">Nombre y apellido</Field.Label>
+                  <Input {...register('fullName')} bg="surface.input" borderColor="surface.border" />
+                  {errors.fullName && (
+                    <Field.ErrorText>{errors.fullName.message}</Field.ErrorText>
+                  )}
+                </Field.Root>
 
-            <Field.Root invalid={!!errors.whatsappE164}>
-              <Field.Label>WhatsApp</Field.Label>
-              <PhoneInput
-                defaultCountry="AR"
-                value={phone}
-                onChange={(val) => {
-                  setPhone(val || '')
-                  setValue('whatsappE164', val || '', {
-                    shouldValidate: true,
-                  })
-                }}
-                international
-                countryCallingCodeEditable={false}
-                className="phone-input"
-              />
-              {errors.whatsappE164 && (
-                <Field.ErrorText>{errors.whatsappE164.message}</Field.ErrorText>
-              )}
-              <Text fontSize="xs" color="fg.muted">
-                Solo visible cuando alguien te quiera contactar
-              </Text>
-            </Field.Root>
+                <Field.Root invalid={!!errors.whatsappE164}>
+                  <Field.Label color="fg.muted" fontSize="sm">WhatsApp</Field.Label>
+                  <PhoneInput
+                    defaultCountry="AR"
+                    value={phone}
+                    onChange={(val) => {
+                      setPhone(val || '')
+                      setValue('whatsappE164', val || '', {
+                        shouldValidate: true,
+                      })
+                    }}
+                    international
+                    countryCallingCodeEditable={false}
+                    className="phone-input"
+                  />
+                  {errors.whatsappE164 && (
+                    <Field.ErrorText>{errors.whatsappE164.message}</Field.ErrorText>
+                  )}
+                  <Text fontSize="xs" color="fg.subtle">
+                    Solo visible cuando alguien te quiera contactar
+                  </Text>
+                </Field.Root>
+              </Stack>
+            </Box>
 
-            <Button type="submit" size="lg" loading={submitting}>
+            <Button type="submit" size="lg" colorPalette="brand" loading={submitting}>
               Siguiente
             </Button>
           </Stack>

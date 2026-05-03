@@ -2,17 +2,16 @@
 
 import {
   Button,
-  Container,
   Heading,
   Input,
   Stack,
   Box,
-  IconButton,
 } from '@chakra-ui/react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useState, useCallback } from 'react'
 import { INTENTS, INDUSTRIES, ROLES } from '@/lib/constants'
 import { ChipSelect } from '@/components/chip-select'
+import { Search } from 'lucide-react'
 
 function FilterContent({
   lookingFor,
@@ -39,12 +38,18 @@ function FilterContent({
 }) {
   return (
     <Stack gap="4">
-      <Box>
-        <Heading size="xs" mb="2">Buscar</Heading>
+      <Box position="relative">
+        <Box position="absolute" left="3" top="50%" transform="translateY(-50%)" color="fg.muted" zIndex="1">
+          <Search size={16} />
+        </Box>
         <Input
-          placeholder="Nombre o startup..."
+          placeholder="Buscar nombre o startup..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          bg="surface.input"
+          borderColor="surface.border"
+          pl="9"
+          _placeholder={{ color: 'fg.subtle' }}
         />
       </Box>
       <Box>
@@ -60,7 +65,7 @@ function FilterContent({
         <ChipSelect options={ROLES} value={roles} onChange={setRoles} max={10} />
       </Box>
       <Stack direction="row" gap="2">
-        <Button onClick={onApply} flex="1">Filtrar</Button>
+        <Button onClick={onApply} flex="1" colorPalette="brand">Filtrar</Button>
         <Button onClick={onClear} variant="outline" flex="1">Limpiar</Button>
       </Stack>
     </Stack>
@@ -123,7 +128,7 @@ export function FeedFilters() {
           {showMobileFilters ? 'Ocultar filtros' : 'Filtros'}
         </Button>
         {showMobileFilters && (
-          <Box mt="4" p="4" borderWidth="1px" borderRadius="lg">
+          <Box mt="4" p="4" bg="surface.card" borderWidth="1px" borderColor="surface.border" borderRadius="xl">
             <FilterContent {...filterProps} />
           </Box>
         )}
@@ -135,8 +140,10 @@ export function FeedFilters() {
         w="280px"
         flexShrink={0}
         p="4"
+        bg="surface.card"
         borderWidth="1px"
-        borderRadius="lg"
+        borderColor="surface.border"
+        borderRadius="xl"
         alignSelf="start"
         position="sticky"
         top="4"

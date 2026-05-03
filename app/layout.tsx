@@ -1,6 +1,13 @@
 import type { Metadata, Viewport } from 'next'
+import { Inter } from 'next/font/google'
 import { Providers } from './providers'
 import { Navbar } from '@/components/navbar'
+
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+  display: 'swap',
+})
 
 export const metadata: Metadata = {
   title: 'Founder Radar',
@@ -8,7 +15,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent',
     title: 'Founder Radar',
   },
   openGraph: {
@@ -19,10 +26,11 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0066ff',
+  themeColor: '#0B0D1A',
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
+  colorScheme: 'dark',
 }
 
 export default function RootLayout({
@@ -31,11 +39,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es" suppressHydrationWarning>
-      <body suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning className={`${inter.variable} dark`}>
+      <body suppressHydrationWarning style={{ background: '#0B0D1A', paddingBottom: '72px' }}>
         <Providers>
-          <Navbar />
           {children}
+          <Navbar />
         </Providers>
       </body>
     </html>
