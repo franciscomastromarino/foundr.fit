@@ -22,6 +22,9 @@ model User {
   connectionsTo   Connection[] @relation("ConnectionTo")
   likesGiven      Like[]       @relation("LikeFrom")
   likesReceived   Like[]       @relation("LikeTo")
+
+  eventsCreated   Event[]
+  eventAttendees  EventAttendee[]
 }
 
 model Account {
@@ -114,4 +117,41 @@ model Connection {
   @@unique([fromUser, toUser])
   @@index([fromUser])
   @@index([toUser])
+}
+
+// ============ Events ============
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?  @db.Text
+  date        DateTime
+  endDate     DateTime?
+  location    String?
+  url         String?
+  imageUrl    String?
+  industries  String[]
+  community   String   @default("emprending")
+  createdBy   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  creator   User            @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+  attendees EventAttendee[]
+
+  @@index([community, date])
+  @@index([industries], type: Gin)
+}
+
+model EventAttendee {
+  id        String   @id @default(cuid())
+  eventId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([eventId])
+  @@index([userId])
 }

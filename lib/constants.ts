@@ -61,3 +61,17 @@ export type Industry = (typeof INDUSTRIES)[number]
 export type Intent = (typeof INTENTS)[number]
 export type Interest = (typeof INTERESTS)[number]
 export type TeamSize = (typeof TEAM_SIZES)[number]
+
+export const EVENT_TYPES = [
+  'Conferencia',
+  'Meetup',
+  'Workshop',
+  'Demo Day',
+  'Hackathon',
+  'Networking',
+  'Pitch',
+  'Webinar',
+  'Otro',
+] as const
+
+export type EventType = (typeof EVENT_TYPES)[number]

@@ -244,10 +244,106 @@ const SEED_USERS = [
   },
 ]
 
+const SEED_EVENTS = [
+  {
+    title: 'Startup Pitch Night BA',
+    description: 'Noche de pitches para founders early-stage. 5 minutos por startup, feedback de inversores y networking post-evento.',
+    date: new Date('2026-06-15T19:00:00'),
+    endDate: new Date('2026-06-15T22:00:00'),
+    location: 'ÁreaT res, Palermo, Buenos Aires',
+    url: 'https://meetup.com/startup-pitch-night-ba',
+    industries: ['SaaS', 'Fintech', 'AI'],
+  },
+  {
+    title: 'AI Builders Meetup',
+    description: 'Meetup mensual para builders de productos con AI. Demos en vivo, lightning talks y birras.',
+    date: new Date('2026-06-22T18:30:00'),
+    endDate: new Date('2026-06-22T21:00:00'),
+    location: 'WeWork Libertador, Buenos Aires',
+    url: 'https://lu.ma/ai-builders-ba',
+    industries: ['AI', 'SaaS'],
+  },
+  {
+    title: 'Fintech Forum Argentina',
+    description: 'Conferencia anual de fintech con speakers de Mercado Pago, Ualá, Brubank y más. Paneles, workshops y networking.',
+    date: new Date('2026-07-10T09:00:00'),
+    endDate: new Date('2026-07-10T18:00:00'),
+    location: 'Centro de Convenciones Buenos Aires',
+    url: 'https://fintechforum.ar',
+    industries: ['Fintech', 'SaaS'],
+  },
+  {
+    title: 'Hackathon ClimateTech',
+    description: '48hs para construir soluciones tech contra el cambio climático. Premios en cash y mentoría de VCs.',
+    date: new Date('2026-07-25T09:00:00'),
+    endDate: new Date('2026-07-27T18:00:00'),
+    location: 'Campus Tecnológico, Córdoba',
+    industries: ['Climate', 'AI'],
+  },
+  {
+    title: 'Demo Day - Emprending Batch 3',
+    description: 'Las 10 startups del batch 3 de Emprending presentan sus avances. Abierto a inversores y comunidad.',
+    date: new Date('2026-08-05T18:00:00'),
+    endDate: new Date('2026-08-05T21:00:00'),
+    location: 'Auditorio ITBA, Buenos Aires',
+    url: 'https://emprending.com/demo-day',
+    industries: ['SaaS', 'AI', 'Fintech', 'Healthtech'],
+  },
+  {
+    title: 'Workshop: De 0 a PMF',
+    description: 'Workshop práctico de 3 horas sobre product-market fit. Frameworks, casos reales y ejercicios hands-on.',
+    date: new Date('2026-06-28T10:00:00'),
+    endDate: new Date('2026-06-28T13:00:00'),
+    location: 'Nerdear.la HQ, Buenos Aires',
+    industries: ['SaaS', 'Marketplace', 'E-commerce'],
+  },
+  {
+    title: 'Networking Founders Rosario',
+    description: 'Encuentro informal para founders de Rosario y alrededores. Sin agenda, solo buenas conversaciones.',
+    date: new Date('2026-06-20T19:00:00'),
+    endDate: new Date('2026-06-20T22:00:00'),
+    location: 'Cervecería Antares, Rosario',
+    industries: ['Marketplace', 'SaaS', 'E-commerce'],
+  },
+]
+
 async function main() {
   console.log('🌱 Seeding database...')
 
-  const userIds: string[] = []
+  // --- Admin user (Google login) ---
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'franmastromarino@gmail.com' },
+    update: {},
+    create: {
+      name: 'Fran Mastromarino',
+      email: 'franmastromarino@gmail.com',
+    },
+  })
+
+  await prisma.profile.upsert({
+    where: { id: adminUser.id },
+    update: {},
+    create: {
+      id: adminUser.id,
+      fullName: 'Fran Mastromarino',
+      whatsappE164: '+5491112345678',
+      role: 'Founder',
+      startup: 'Foundr.fit',
+      startupUrl: 'https://foundr.fit',
+      industries: ['SaaS', 'AI'],
+      lookingFor: ['Networking', 'Partners', 'Inversión'],
+      interests: ['Tecnología', 'Producto', 'Growth'],
+      bio: 'Construyendo Foundr.fit - la red para founders de LatAm',
+      city: 'Buenos Aires',
+      community: 'emprending',
+      onboardingComplete: true,
+      onboardingStep: 3,
+      visible: true,
+    },
+  })
+  console.log(`  ✓ Fran Mastromarino (admin)`)
+
+  const userIds: string[] = [adminUser.id]
 
   for (const userData of SEED_USERS) {
     const user = await prisma.user.upsert({
@@ -276,19 +372,25 @@ async function main() {
     console.log(`  ✓ ${userData.name}`)
   }
 
+  // userIds[0] = Fran (admin), userIds[1..] = seed users
+
   // Create some cross-likes for matches
+  // Fran <-> Martina (match)
+  // Fran <-> Santiago (match)
   // Martina <-> Santiago (match)
   // Valentina <-> Tomás (match)
   // Lucas <-> Sofía (match)
   // Camila -> Mateo (one-way, no match)
   // Isabella -> Nicolás (one-way, no match)
   const likePairs = [
-    [0, 1], [1, 0], // Martina <-> Santiago
-    [2, 3], [3, 2], // Valentina <-> Tomás
-    [5, 6], [6, 5], // Lucas <-> Sofía
-    [4, 7],         // Camila -> Mateo (one-way)
-    [8, 9],         // Isabella -> Nicolás (one-way)
-    [10, 11], [11, 10], // Julieta <-> Federico
+    [0, 1], [1, 0], // Fran <-> Martina
+    [0, 2], [2, 0], // Fran <-> Santiago
+    [1, 2], [2, 1], // Martina <-> Santiago
+    [3, 4], [4, 3], // Valentina <-> Tomás
+    [6, 7], [7, 6], // Lucas <-> Sofía
+    [5, 8],         // Camila -> Mateo (one-way)
+    [9, 10],        // Isabella -> Nicolás (one-way)
+    [11, 12], [12, 11], // Julieta <-> Federico
   ]
 
   for (const [fromIdx, toIdx] of likePairs) {
@@ -307,8 +409,47 @@ async function main() {
     })
   }
 
-  console.log(`\n✅ Seeded ${SEED_USERS.length} users with profiles and likes`)
-  console.log('   Matches: Martina↔Santiago, Valentina↔Tomás, Lucas↔Sofía, Julieta↔Federico')
+  console.log(`\n📅 Seeding events...`)
+
+  for (const eventData of SEED_EVENTS) {
+    await prisma.event.create({
+      data: {
+        ...eventData,
+        community: 'emprending',
+        createdBy: adminUser.id,
+      },
+    })
+    console.log(`  ✓ ${eventData.title}`)
+  }
+
+  // Add some attendees to events
+  const events = await prisma.event.findMany({ orderBy: { date: 'asc' } })
+  const attendeeMap = [
+    { eventIdx: 0, userIdxs: [0, 1, 2, 4, 7] },   // Pitch Night: Fran, Martina, Santiago, Tomás, Sofía
+    { eventIdx: 1, userIdxs: [0, 2, 8, 13] },       // AI Builders: Fran, Santiago, Mateo, Federico
+    { eventIdx: 2, userIdxs: [0, 1, 6] },            // Fintech Forum: Fran, Martina, Lucas
+    { eventIdx: 3, userIdxs: [3, 13] },              // Hackathon: Valentina, Federico
+    { eventIdx: 4, userIdxs: [0, 1, 2, 3, 4, 7] },  // Demo Day: Fran + varios
+    { eventIdx: 5, userIdxs: [0, 5, 14, 15] },       // Workshop PMF: Fran, Camila, Emiliano, Renata
+    { eventIdx: 6, userIdxs: [3] },                   // Networking Rosario: Valentina
+  ]
+
+  for (const { eventIdx, userIdxs } of attendeeMap) {
+    if (!events[eventIdx]) continue
+    for (const userIdx of userIdxs) {
+      if (!userIds[userIdx]) continue
+      await prisma.eventAttendee.create({
+        data: {
+          eventId: events[eventIdx].id,
+          userId: userIds[userIdx],
+        },
+      })
+    }
+  }
+
+  console.log(`\n✅ Seeded ${SEED_USERS.length + 1} users, ${SEED_EVENTS.length} events with attendees`)
+  console.log('   Admin: franmastromarino@gmail.com')
+  console.log('   Matches: Fran↔Martina, Fran↔Santiago, Martina↔Santiago, Valentina↔Tomás, Lucas↔Sofía, Julieta↔Federico')
   console.log('   One-way likes: Camila→Mateo, Isabella→Nicolás')
 }
 

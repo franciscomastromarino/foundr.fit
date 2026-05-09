@@ -4,10 +4,10 @@ import { Box, Container, HStack, Text, VStack } from '@chakra-ui/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
-import { Home, LayoutGrid, Heart, Settings, Zap } from 'lucide-react'
+import { CalendarDays, LayoutGrid, Heart, Settings, Zap } from 'lucide-react'
 
 const LEFT_ITEMS = [
-  { href: '/', label: 'Inicio', icon: Home },
+  { href: '/events', label: 'Eventos', icon: CalendarDays },
   { href: '/feed', label: 'Explorar', icon: LayoutGrid },
 ]
 
@@ -45,7 +45,7 @@ export function Navbar() {
         <HStack justify="center" py="2" px="4" gap="0" position="relative">
           {/* Left nav items */}
           {LEFT_ITEMS.map((item) => {
-            const isActive = item.href === '/' ? pathname === '/' : pathname.startsWith(item.href)
+            const isActive = pathname.startsWith(item.href)
             const Icon = item.icon
             return (
               <Link key={item.label} href={item.href} aria-current={isActive ? 'page' : undefined}>
