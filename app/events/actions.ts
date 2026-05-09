@@ -18,18 +18,29 @@ export async function getEvents(filters?: {
   industries?: string[]
   search?: string
   past?: boolean
+  month?: string // "YYYY-MM" format
 }) {
   const session = await auth()
   if (!session?.user?.id) throw new Error('Unauthorized')
 
   const now = new Date()
 
+  // If month is provided, filter by that month range
+  let dateFilter: Record<string, unknown> = filters?.past
+    ? { date: { lt: now } }
+    : { date: { gte: now } }
+
+  if (filters?.month) {
+    const [year, month] = filters.month.split('-').map(Number)
+    const start = new Date(year, month - 1, 1)
+    const end = new Date(year, month, 1)
+    dateFilter = { date: { gte: start, lt: end } }
+  }
+
   return prisma.event.findMany({
     where: {
       community: 'emprending',
-      ...(filters?.past
-        ? { date: { lt: now } }
-        : { date: { gte: now } }),
+      ...dateFilter,
       ...(filters?.industries?.length && {
         industries: { hasSome: filters.industries },
       }),
@@ -47,11 +58,21 @@ export async function getEvents(filters?: {
         select: { id: true },
       },
     },
-    orderBy: filters?.past
-      ? { date: 'desc' }
-      : { date: 'asc' },
-    take: 50,
+    orderBy: { date: 'asc' },
+    take: 100,
   })
+}
+
+export async function getMyIndustries() {
+  const session = await auth()
+  if (!session?.user?.id) throw new Error('Unauthorized')
+
+  const profile = await prisma.profile.findUnique({
+    where: { id: session.user.id },
+    select: { industries: true },
+  })
+
+  return profile?.industries ?? []
 }
 
 export async function getEventById(eventId: string) {

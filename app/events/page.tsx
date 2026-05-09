@@ -1,21 +1,19 @@
 export const dynamic = 'force-dynamic'
 
-import { Container, Heading, Stack, Text, HStack, Button } from '@chakra-ui/react'
+import { Container, Stack } from '@chakra-ui/react'
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getEvents } from './actions'
-import { EventList } from './event-list'
-import { EventFilters } from './event-filters'
-import { Suspense } from 'react'
-import Link from 'next/link'
-import { Plus } from 'lucide-react'
+import { EventsView } from './events-view'
 
 interface Props {
   searchParams: Promise<{
     industries?: string
     search?: string
     past?: string
+    view?: string
+    all?: string
   }>
 }
 
@@ -25,7 +23,7 @@ export default async function EventsPage({ searchParams }: Props) {
 
   const profile = await prisma.profile.findUnique({
     where: { id: session.user.id },
-    select: { onboardingComplete: true, onboardingStep: true },
+    select: { onboardingComplete: true, onboardingStep: true, industries: true },
   })
 
   if (!profile || !profile.onboardingComplete) {
@@ -34,8 +32,14 @@ export default async function EventsPage({ searchParams }: Props) {
   }
 
   const params = await searchParams
+  const showAll = params.all === '1'
+
+  // Default: filter by user's industries unless "all" or explicit industries filter
+  const explicitIndustries = params.industries?.split(',').filter(Boolean)
+  const activeIndustries = explicitIndustries ?? (showAll ? [] : profile.industries)
+
   const filters = {
-    industries: params.industries?.split(',').filter(Boolean),
+    industries: activeIndustries.length > 0 ? activeIndustries : undefined,
     search: params.search || undefined,
     past: params.past === '1',
   }
@@ -45,26 +49,12 @@ export default async function EventsPage({ searchParams }: Props) {
   return (
     <Container maxW="lg" py="6">
       <Stack gap="5">
-        <HStack justify="space-between" align="start">
-          <Stack gap="1">
-            <Heading size="xl">Eventos</Heading>
-            <Text fontSize="sm" color="fg.muted">
-              Descubrí eventos y conectá con quienes asisten
-            </Text>
-          </Stack>
-          <Button asChild colorPalette="brand" size="sm" borderRadius="full">
-            <Link href="/events/new">
-              <Plus size={16} />
-              Crear
-            </Link>
-          </Button>
-        </HStack>
-
-        <Suspense>
-          <EventFilters />
-        </Suspense>
-
-        <EventList events={events} />
+        <EventsView
+          initialEvents={events}
+          userIndustries={profile.industries}
+          initialView={(params.view as 'list' | 'calendar') || 'calendar'}
+          showAll={showAll}
+        />
       </Stack>
     </Container>
   )
