@@ -51,6 +51,7 @@ export function EventCalendar({
   loading,
   onSelectDay,
   onChangeMonth,
+  onToggleYearView,
 }: {
   events: EventWithMeta[]
   year: number
@@ -59,6 +60,7 @@ export function EventCalendar({
   loading: boolean
   onSelectDay: (day: number | null) => void
   onChangeMonth: (year: number, month: number) => void
+  onToggleYearView?: () => void
 }) {
   const now = new Date()
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
@@ -102,7 +104,13 @@ export function EventCalendar({
         </Button>
 
         <HStack gap="2" align="center">
-          <Heading size="md">
+          <Heading
+            size="md"
+            cursor={onToggleYearView ? 'pointer' : 'default'}
+            onClick={onToggleYearView}
+            _hover={onToggleYearView ? { color: 'brand.500' } : {}}
+            transition="color 0.15s"
+          >
             {MONTH_NAMES[month]} {year}
           </Heading>
           {!isCurrentMonth && (

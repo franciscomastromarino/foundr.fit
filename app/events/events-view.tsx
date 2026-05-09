@@ -12,10 +12,11 @@ import {
   Wrap,
 } from '@chakra-ui/react'
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { CalendarDays, Plus, Search, X } from 'lucide-react'
 import Link from 'next/link'
 import { EventCalendar, MONTH_NAMES } from './event-calendar'
+import { YearView } from './year-view'
 import { EventList } from './event-list'
 import { INDUSTRIES } from '@/lib/constants'
 import { ChipSelect } from '@/components/chip-select'
@@ -34,6 +35,8 @@ type EventWithMeta = {
   attendees: { id: string }[]
 }
 
+type CalendarMode = 'month' | 'year'
+
 export function EventsView({
   initialEvents,
   userIndustries,
@@ -43,14 +46,15 @@ export function EventsView({
   userIndustries: string[]
   showAll: boolean
 }) {
-  const router = useRouter()
   const searchParams = useSearchParams()
 
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth())
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
+  const [calendarMode, setCalendarMode] = useState<CalendarMode>('month')
   const [events, setEvents] = useState<EventWithMeta[]>(initialEvents)
+  const [yearEvents, setYearEvents] = useState<EventWithMeta[]>([])
   const [loading, setLoading] = useState(false)
 
   const [forYou, setForYou] = useState(!showAll)
@@ -69,7 +73,7 @@ export function EventsView({
     : []
 
   // Fetch events for the current month + filters
-  const fetchEvents = useCallback(async (y: number, m: number, industries: string[], searchTerm: string) => {
+  const fetchMonthEvents = useCallback(async (y: number, m: number, industries: string[], searchTerm: string) => {
     setLoading(true)
     const monthKey = `${y}-${String(m + 1).padStart(2, '0')}`
     const result = await getEvents({
@@ -81,10 +85,31 @@ export function EventsView({
     setLoading(false)
   }, [])
 
-  // Refetch when filters change
+  // Fetch events for a full year
+  const fetchYearEvents = useCallback(async (y: number, industries: string[], searchTerm: string) => {
+    setLoading(true)
+    const result = await getEvents({
+      year: y,
+      industries: industries.length > 0 ? industries : undefined,
+      search: searchTerm.trim() || undefined,
+    })
+    setYearEvents(result)
+    setLoading(false)
+  }, [])
+
+  // Refetch when filters change (month mode)
   useEffect(() => {
-    fetchEvents(year, month, activeIndustries, search)
-  }, [year, month, activeIndustries.join(','), search]) // eslint-disable-line react-hooks/exhaustive-deps
+    if (calendarMode === 'month') {
+      fetchMonthEvents(year, month, activeIndustries, search)
+    }
+  }, [year, month, activeIndustries.join(','), search, calendarMode]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Refetch when filters change (year mode)
+  useEffect(() => {
+    if (calendarMode === 'year') {
+      fetchYearEvents(year, activeIndustries, search)
+    }
+  }, [year, activeIndustries.join(','), search, calendarMode]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChangeMonth = (y: number, m: number) => {
     setYear(y)
@@ -96,29 +121,38 @@ export function EventsView({
     setSelectedDay(day)
   }
 
+  const toggleYearView = () => {
+    if (calendarMode === 'month') {
+      setCalendarMode('year')
+      setSelectedDay(null)
+    } else {
+      setCalendarMode('month')
+    }
+  }
+
+  const handleSelectMonthFromYear = (y: number, m: number) => {
+    setYear(y)
+    setMonth(m)
+    setSelectedDay(null)
+    setCalendarMode('month')
+  }
+
+  const handleChangeYear = (y: number) => {
+    setYear(y)
+  }
+
   const clearDateFilter = () => {
     setSelectedDay(null)
-    // If not on current month, go back to current month
     const now = new Date()
     setYear(now.getFullYear())
     setMonth(now.getMonth())
+    setCalendarMode('month')
   }
 
   const toggleForYou = () => {
     const next = !forYou
     setForYou(next)
     setCustomIndustries([])
-  }
-
-  const clearAllFilters = () => {
-    setForYou(true)
-    setCustomIndustries([])
-    setSearch('')
-    setSelectedDay(null)
-    const now = new Date()
-    setYear(now.getFullYear())
-    setMonth(now.getMonth())
-    setShowIndustryPicker(false)
   }
 
   // Close dropdown on outside click
@@ -132,8 +166,10 @@ export function EventsView({
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  // Filter events for the list based on selected day
-  const filteredEvents = selectedDay
+  // Filter events for the list based on calendar selection
+  const listEvents = calendarMode === 'year'
+    ? yearEvents
+    : selectedDay
     ? events.filter((e) => {
         const d = new Date(e.date)
         return d.getFullYear() === year && d.getMonth() === month && d.getDate() === selectedDay
@@ -142,11 +178,21 @@ export function EventsView({
 
   // Build date filter label
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
-  const dateFilterLabel = selectedDay
-    ? `${selectedDay} de ${MONTH_NAMES[month]}`
-    : !isCurrentMonth
-    ? `${MONTH_NAMES[month]} ${year}`
-    : null
+  const isCurrentYear = year === now.getFullYear()
+
+  let listTitle: string
+  let dateFilterLabel: string | null = null
+
+  if (calendarMode === 'year') {
+    listTitle = `${year}`
+    if (!isCurrentYear) dateFilterLabel = `${year}`
+  } else if (selectedDay) {
+    listTitle = `${selectedDay} de ${MONTH_NAMES[month]}`
+    dateFilterLabel = `${selectedDay} de ${MONTH_NAMES[month]}`
+  } else {
+    listTitle = `${MONTH_NAMES[month]} ${year}`
+    if (!isCurrentMonth) dateFilterLabel = `${MONTH_NAMES[month]} ${year}`
+  }
 
   return (
     <>
@@ -172,18 +218,35 @@ export function EventsView({
       <Stack gap="3">
         <HStack justify="space-between" align="center">
           {/* "Para ti" toggle */}
-          <Button
-            size="xs"
-            variant={forYou && !hasCustomFilter ? 'solid' : 'outline'}
-            colorPalette={forYou && !hasCustomFilter ? 'green' : undefined}
-            borderRadius="full"
-            onClick={toggleForYou}
-            px="3"
-            fontWeight="500"
-            borderColor={forYou && !hasCustomFilter ? undefined : 'surface.border'}
-          >
-            {forYou && !hasCustomFilter ? 'Para ti' : 'Todos'}
-          </Button>
+          <HStack gap="2">
+            <Button
+              size="xs"
+              variant={forYou && !hasCustomFilter ? 'solid' : 'outline'}
+              colorPalette={forYou && !hasCustomFilter ? 'green' : undefined}
+              borderRadius="full"
+              onClick={toggleForYou}
+              px="3"
+              fontWeight="500"
+              borderColor={forYou && !hasCustomFilter ? undefined : 'surface.border'}
+            >
+              {forYou && !hasCustomFilter ? 'Para ti' : 'Todos'}
+            </Button>
+
+            {/* Year view toggle */}
+            <Button
+              size="xs"
+              variant={calendarMode === 'year' ? 'solid' : 'outline'}
+              colorPalette={calendarMode === 'year' ? 'brand' : undefined}
+              borderRadius="full"
+              onClick={toggleYearView}
+              px="3"
+              fontWeight="500"
+              borderColor={calendarMode === 'year' ? undefined : 'surface.border'}
+              color={calendarMode === 'year' ? undefined : 'fg.DEFAULT'}
+            >
+              Año
+            </Button>
+          </HStack>
 
           {/* Industry filter */}
           <Box position="relative" ref={dropdownRef}>
@@ -288,33 +351,39 @@ export function EventsView({
         </Box>
       </Stack>
 
-      {/* Calendar */}
-      <EventCalendar
-        events={events}
-        year={year}
-        month={month}
-        selectedDay={selectedDay}
-        loading={loading}
-        onSelectDay={handleSelectDay}
-        onChangeMonth={handleChangeMonth}
-      />
+      {/* Calendar: month or year */}
+      {calendarMode === 'year' ? (
+        <YearView
+          year={year}
+          events={yearEvents}
+          loading={loading}
+          onSelectMonth={handleSelectMonthFromYear}
+          onChangeYear={handleChangeYear}
+        />
+      ) : (
+        <EventCalendar
+          events={events}
+          year={year}
+          month={month}
+          selectedDay={selectedDay}
+          loading={loading}
+          onSelectDay={handleSelectDay}
+          onChangeMonth={handleChangeMonth}
+          onToggleYearView={toggleYearView}
+        />
+      )}
 
       {/* Date filter badge + list header */}
       <Stack gap="3">
         <HStack justify="space-between" align="center">
           <HStack gap="2" align="center">
-            <Heading size="md">
-              {selectedDay
-                ? `${selectedDay} de ${MONTH_NAMES[month]}`
-                : `${MONTH_NAMES[month]} ${year}`}
-            </Heading>
+            <Heading size="md">{listTitle}</Heading>
             <Text fontSize="sm" color="fg.muted">
-              ({filteredEvents.length} {filteredEvents.length === 1 ? 'evento' : 'eventos'})
+              ({listEvents.length} {listEvents.length === 1 ? 'evento' : 'eventos'})
             </Text>
           </HStack>
 
-          {/* Clear date filter button */}
-          {(selectedDay || !isCurrentMonth) && (
+          {dateFilterLabel && (
             <Button
               size="xs"
               variant="outline"
@@ -333,7 +402,7 @@ export function EventsView({
         </HStack>
 
         {/* Event list */}
-        <EventList events={filteredEvents} />
+        <EventList events={listEvents} />
       </Stack>
     </>
   )

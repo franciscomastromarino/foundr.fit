@@ -19,6 +19,7 @@ export async function getEvents(filters?: {
   search?: string
   past?: boolean
   month?: string // "YYYY-MM" format
+  year?: number  // full year (e.g. 2026)
 }) {
   const session = await auth()
   if (!session?.user?.id) throw new Error('Unauthorized')
@@ -30,7 +31,11 @@ export async function getEvents(filters?: {
     ? { date: { lt: now } }
     : { date: { gte: now } }
 
-  if (filters?.month) {
+  if (filters?.year) {
+    const start = new Date(filters.year, 0, 1)
+    const end = new Date(filters.year + 1, 0, 1)
+    dateFilter = { date: { gte: start, lt: end } }
+  } else if (filters?.month) {
     const [year, month] = filters.month.split('-').map(Number)
     const start = new Date(year, month - 1, 1)
     const end = new Date(year, month, 1)
@@ -59,7 +64,7 @@ export async function getEvents(filters?: {
       },
     },
     orderBy: { date: 'asc' },
-    take: 100,
+    take: 200,
   })
 }
 
