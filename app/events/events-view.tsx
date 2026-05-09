@@ -13,12 +13,13 @@ import {
 } from '@chakra-ui/react'
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { CalendarDays, List, Plus, Search, X } from 'lucide-react'
+import { CalendarDays, Plus, Search, X } from 'lucide-react'
 import Link from 'next/link'
+import { EventCalendar, MONTH_NAMES } from './event-calendar'
 import { EventList } from './event-list'
-import { EventCalendar } from './event-calendar'
 import { INDUSTRIES } from '@/lib/constants'
 import { ChipSelect } from '@/components/chip-select'
+import { getEvents } from './actions'
 
 type EventWithMeta = {
   id: string
@@ -36,18 +37,22 @@ type EventWithMeta = {
 export function EventsView({
   initialEvents,
   userIndustries,
-  initialView,
   showAll,
 }: {
   initialEvents: EventWithMeta[]
   userIndustries: string[]
-  initialView: 'list' | 'calendar'
   showAll: boolean
 }) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  const [view, setView] = useState<'list' | 'calendar'>(initialView)
+  const now = new Date()
+  const [year, setYear] = useState(now.getFullYear())
+  const [month, setMonth] = useState(now.getMonth())
+  const [selectedDay, setSelectedDay] = useState<number | null>(null)
+  const [events, setEvents] = useState<EventWithMeta[]>(initialEvents)
+  const [loading, setLoading] = useState(false)
+
   const [forYou, setForYou] = useState(!showAll)
   const [search, setSearch] = useState(searchParams.get('search') ?? '')
   const [customIndustries, setCustomIndustries] = useState<string[]>(
@@ -57,50 +62,63 @@ export function EventsView({
   const dropdownRef = useRef<HTMLDivElement>(null)
 
   const hasCustomFilter = customIndustries.length > 0
-
-  // The active industries: custom > forYou (user's) > all
   const activeIndustries = hasCustomFilter
     ? customIndustries
     : forYou
     ? userIndustries
     : []
 
-  const applyFilters = useCallback((overrides?: { forYou?: boolean; industries?: string[]; search?: string }) => {
-    const params = new URLSearchParams()
-    params.set('view', view)
+  // Fetch events for the current month + filters
+  const fetchEvents = useCallback(async (y: number, m: number, industries: string[], searchTerm: string) => {
+    setLoading(true)
+    const monthKey = `${y}-${String(m + 1).padStart(2, '0')}`
+    const result = await getEvents({
+      month: monthKey,
+      industries: industries.length > 0 ? industries : undefined,
+      search: searchTerm.trim() || undefined,
+    })
+    setEvents(result)
+    setLoading(false)
+  }, [])
 
-    const fy = overrides?.forYou ?? forYou
-    const ind = overrides?.industries ?? customIndustries
-    const s = overrides?.search ?? search
+  // Refetch when filters change
+  useEffect(() => {
+    fetchEvents(year, month, activeIndustries, search)
+  }, [year, month, activeIndustries.join(','), search]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    if (!fy && ind.length === 0) params.set('all', '1')
-    if (ind.length > 0) params.set('industries', ind.join(','))
-    if (s.trim()) params.set('search', s.trim())
+  const handleChangeMonth = (y: number, m: number) => {
+    setYear(y)
+    setMonth(m)
+    setSelectedDay(null)
+  }
 
-    router.push(`/events?${params.toString()}`)
-    setShowIndustryPicker(false)
-  }, [view, forYou, customIndustries, search, router])
+  const handleSelectDay = (day: number | null) => {
+    setSelectedDay(day)
+  }
+
+  const clearDateFilter = () => {
+    setSelectedDay(null)
+    // If not on current month, go back to current month
+    const now = new Date()
+    setYear(now.getFullYear())
+    setMonth(now.getMonth())
+  }
 
   const toggleForYou = () => {
     const next = !forYou
     setForYou(next)
     setCustomIndustries([])
-    applyFilters({ forYou: next, industries: [] })
   }
 
-  const clearAll = () => {
+  const clearAllFilters = () => {
     setForYou(true)
     setCustomIndustries([])
     setSearch('')
-    router.push(`/events?view=${view}`)
+    setSelectedDay(null)
+    const now = new Date()
+    setYear(now.getFullYear())
+    setMonth(now.getMonth())
     setShowIndustryPicker(false)
-  }
-
-  const handleViewToggle = (v: 'list' | 'calendar') => {
-    setView(v)
-    const params = new URLSearchParams(searchParams.toString())
-    params.set('view', v)
-    router.push(`/events?${params.toString()}`)
   }
 
   // Close dropdown on outside click
@@ -114,9 +132,21 @@ export function EventsView({
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  const handleSearchKey = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') applyFilters()
-  }
+  // Filter events for the list based on selected day
+  const filteredEvents = selectedDay
+    ? events.filter((e) => {
+        const d = new Date(e.date)
+        return d.getFullYear() === year && d.getMonth() === month && d.getDate() === selectedDay
+      })
+    : events
+
+  // Build date filter label
+  const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
+  const dateFilterLabel = selectedDay
+    ? `${selectedDay} de ${MONTH_NAMES[month]}`
+    : !isCurrentMonth
+    ? `${MONTH_NAMES[month]} ${year}`
+    : null
 
   return (
     <>
@@ -138,40 +168,9 @@ export function EventsView({
         </Button>
       </HStack>
 
-      {/* View toggle + "Para ti" badge */}
+      {/* Filters row */}
       <Stack gap="3">
         <HStack justify="space-between" align="center">
-          {/* View toggle */}
-          <HStack
-            gap="0"
-            bg="surface.elevated"
-            borderRadius="lg"
-            p="0.5"
-          >
-            <Button
-              size="xs"
-              variant={view === 'calendar' ? 'solid' : 'ghost'}
-              colorPalette={view === 'calendar' ? 'brand' : undefined}
-              borderRadius="md"
-              onClick={() => handleViewToggle('calendar')}
-              px="3"
-            >
-              <CalendarDays size={14} />
-              Calendario
-            </Button>
-            <Button
-              size="xs"
-              variant={view === 'list' ? 'solid' : 'ghost'}
-              colorPalette={view === 'list' ? 'brand' : undefined}
-              borderRadius="md"
-              onClick={() => handleViewToggle('list')}
-              px="3"
-            >
-              <List size={14} />
-              Lista
-            </Button>
-          </HStack>
-
           {/* "Para ti" toggle */}
           <Button
             size="xs"
@@ -185,9 +184,70 @@ export function EventsView({
           >
             {forYou && !hasCustomFilter ? 'Para ti' : 'Todos'}
           </Button>
+
+          {/* Industry filter */}
+          <Box position="relative" ref={dropdownRef}>
+            <Button
+              size="xs"
+              variant={hasCustomFilter ? 'solid' : 'outline'}
+              colorPalette={hasCustomFilter ? 'brand' : undefined}
+              borderRadius="full"
+              onClick={() => setShowIndustryPicker(!showIndustryPicker)}
+              flexShrink={0}
+              px="3"
+              fontWeight="500"
+              borderColor={hasCustomFilter ? undefined : 'surface.border'}
+              color={hasCustomFilter ? undefined : 'fg.DEFAULT'}
+            >
+              Industria{hasCustomFilter && ` (${customIndustries.length})`}
+            </Button>
+
+            {showIndustryPicker && (
+              <Box
+                role="dialog"
+                aria-label="Filtro: industria"
+                position="absolute"
+                top="100%"
+                right="0"
+                mt="2"
+                bg="white"
+                borderRadius="xl"
+                boxShadow="0 4px 20px rgba(0,0,0,0.12)"
+                borderWidth="1px"
+                borderColor="surface.border"
+                p="4"
+                zIndex="20"
+                minW="280px"
+              >
+                <Stack gap="3">
+                  <Heading size="xs">Industria</Heading>
+                  <ChipSelect
+                    options={INDUSTRIES}
+                    value={customIndustries}
+                    onChange={(v) => {
+                      setCustomIndustries(v)
+                      setForYou(false)
+                    }}
+                    max={10}
+                    colorScheme="green"
+                  />
+                </Stack>
+                <Button
+                  onClick={() => setShowIndustryPicker(false)}
+                  colorPalette="brand"
+                  size="sm"
+                  mt="3"
+                  w="full"
+                  borderRadius="full"
+                >
+                  Aplicar
+                </Button>
+              </Box>
+            )}
+          </Box>
         </HStack>
 
-        {/* User industries info when "Para ti" is active */}
+        {/* User industries badges */}
         {forYou && !hasCustomFilter && userIndustries.length > 0 && (
           <Wrap gap="1.5">
             {userIndustries.map((ind) => (
@@ -217,7 +277,6 @@ export function EventsView({
             aria-label="Buscar eventos"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            onKeyDown={handleSearchKey}
             bg="surface.elevated"
             borderColor="transparent"
             borderRadius="xl"
@@ -227,94 +286,55 @@ export function EventsView({
             _focus={{ borderColor: 'brand.400', bg: 'white' }}
           />
         </Box>
-
-        {/* Industry filter */}
-        <Box position="relative" ref={dropdownRef}>
-          <HStack gap="2">
-            <Button
-              size="xs"
-              variant={hasCustomFilter ? 'solid' : 'outline'}
-              colorPalette={hasCustomFilter ? 'brand' : undefined}
-              borderRadius="full"
-              onClick={() => setShowIndustryPicker(!showIndustryPicker)}
-              flexShrink={0}
-              px="3"
-              fontWeight="500"
-              borderColor={hasCustomFilter ? undefined : 'surface.border'}
-              color={hasCustomFilter ? undefined : 'fg.DEFAULT'}
-            >
-              Industria{hasCustomFilter && ` (${customIndustries.length})`}
-            </Button>
-
-            {(hasCustomFilter || search) && (
-              <Button
-                variant="ghost"
-                size="xs"
-                color="fg.muted"
-                onClick={clearAll}
-                flexShrink={0}
-              >
-                <X size={14} />
-                Limpiar
-              </Button>
-            )}
-          </HStack>
-
-          {showIndustryPicker && (
-            <Box
-              role="dialog"
-              aria-label="Filtro: industria"
-              position="absolute"
-              top="100%"
-              left="0"
-              right="0"
-              mt="2"
-              bg="white"
-              borderRadius="xl"
-              boxShadow="0 4px 20px rgba(0,0,0,0.12)"
-              borderWidth="1px"
-              borderColor="surface.border"
-              p="4"
-              zIndex="20"
-            >
-              <Stack gap="3">
-                <Heading size="xs">Industria</Heading>
-                <ChipSelect
-                  options={INDUSTRIES}
-                  value={customIndustries}
-                  onChange={setCustomIndustries}
-                  max={10}
-                  colorScheme="green"
-                />
-              </Stack>
-              <Button
-                onClick={() => {
-                  setForYou(false)
-                  applyFilters({ forYou: false, industries: customIndustries })
-                }}
-                colorPalette="brand"
-                size="sm"
-                mt="3"
-                w="full"
-                borderRadius="full"
-              >
-                Aplicar filtros
-              </Button>
-            </Box>
-          )}
-        </Box>
       </Stack>
 
-      {/* View content */}
-      {view === 'calendar' ? (
-        <EventCalendar
-          initialEvents={initialEvents}
-          userIndustries={userIndustries}
-          activeIndustries={activeIndustries}
-        />
-      ) : (
-        <EventList events={initialEvents} />
-      )}
+      {/* Calendar */}
+      <EventCalendar
+        events={events}
+        year={year}
+        month={month}
+        selectedDay={selectedDay}
+        loading={loading}
+        onSelectDay={handleSelectDay}
+        onChangeMonth={handleChangeMonth}
+      />
+
+      {/* Date filter badge + list header */}
+      <Stack gap="3">
+        <HStack justify="space-between" align="center">
+          <HStack gap="2" align="center">
+            <Heading size="md">
+              {selectedDay
+                ? `${selectedDay} de ${MONTH_NAMES[month]}`
+                : `${MONTH_NAMES[month]} ${year}`}
+            </Heading>
+            <Text fontSize="sm" color="fg.muted">
+              ({filteredEvents.length} {filteredEvents.length === 1 ? 'evento' : 'eventos'})
+            </Text>
+          </HStack>
+
+          {/* Clear date filter button */}
+          {(selectedDay || !isCurrentMonth) && (
+            <Button
+              size="xs"
+              variant="outline"
+              borderRadius="full"
+              onClick={clearDateFilter}
+              px="3"
+              fontWeight="500"
+              borderColor="surface.border"
+              color="fg.DEFAULT"
+            >
+              <CalendarDays size={13} />
+              {dateFilterLabel}
+              <X size={13} />
+            </Button>
+          )}
+        </HStack>
+
+        {/* Event list */}
+        <EventList events={filteredEvents} />
+      </Stack>
     </>
   )
 }

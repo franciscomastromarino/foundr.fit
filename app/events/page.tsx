@@ -11,8 +11,6 @@ interface Props {
   searchParams: Promise<{
     industries?: string
     search?: string
-    past?: string
-    view?: string
     all?: string
   }>
 }
@@ -34,17 +32,18 @@ export default async function EventsPage({ searchParams }: Props) {
   const params = await searchParams
   const showAll = params.all === '1'
 
-  // Default: filter by user's industries unless "all" or explicit industries filter
   const explicitIndustries = params.industries?.split(',').filter(Boolean)
   const activeIndustries = explicitIndustries ?? (showAll ? [] : profile.industries)
 
-  const filters = {
+  // Load current month events for initial render
+  const now = new Date()
+  const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+
+  const events = await getEvents({
+    month: monthKey,
     industries: activeIndustries.length > 0 ? activeIndustries : undefined,
     search: params.search || undefined,
-    past: params.past === '1',
-  }
-
-  const events = await getEvents(filters)
+  })
 
   return (
     <Container maxW="lg" py="6">
@@ -52,7 +51,6 @@ export default async function EventsPage({ searchParams }: Props) {
         <EventsView
           initialEvents={events}
           userIndustries={profile.industries}
-          initialView={(params.view as 'list' | 'calendar') || 'calendar'}
           showAll={showAll}
         />
       </Stack>
